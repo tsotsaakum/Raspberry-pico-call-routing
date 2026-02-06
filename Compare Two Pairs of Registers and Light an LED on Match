@@ -1,0 +1,35 @@
+syntax unified 
+.thumb 
+.section .text 
+.global main 
+.type main, %function 
+SIO_BASE      = 0xD0000000 
+GPIO_OE_SET   = 0x14 
+GPIO_OUT_SET  = 0x18 
+GPIO_OUT_CLR  = 0x1C 
+main: 
+/* 1) Pre-load registers with test values (in real code R0–R3 come from elsewhere) */ 
+mov   r0, #0x55 
+mov   r1, #0x55 
+mov   r2, #0xAA 
+mov   r3, #0xAA 
+/* 2) Configure GP25 as output for LED */ 
+ldr   r4, =SIO_BASE 
+mov   r5, #(1<<25) 
+str   r5, [r4, #GPIO_OE_SET] 
+/* 3) Compare R0 vs R1 */ 
+cmp   r0, r1 
+bne   no_match 
+/* 4) Compare R2 vs R3 */ 
+cmp   r2, r3 
+bne   no_match 
+/* 5) Both equal: turn on LED */ 
+str   r5, [r4, #GPIO_OUT_SET] 
+b     done 
+no_match: 
+/* Turn off LED */ 
+str   r5, [r4, #GPIO_OUT_CLR] 
+done: 
+/* End or loop forever */ 
+b     done 
+. size main, .-main
