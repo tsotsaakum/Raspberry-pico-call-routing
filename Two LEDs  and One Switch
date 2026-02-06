@@ -1,0 +1,41 @@
+.syntax unified 
+.thumb 
+.section .text 
+.global main 
+.type main, %function 
+@ GPIO registers (SIO) 
+SIO_BASE      = 0xD0000000 
+GPIO_OE_SET   = 0x14 
+GPIO_OE_CLR   = 0x10 
+GPIO_OUT_SET  = 0x18 
+GPIO_OUT_CLR  = 0x1C 
+GPIO_IN      
+main: 
+ = 0x04 
+/* 1) Configure GP15 as input, GP16 & GP17 as outputs */ 
+ldr   r0, =SIO_BASE 
+mov   r1, #(1<<16)|(1<<17) 
+str   r1, [r0, #GPIO_OE_SET]  @ Set GP16 & GP17 as outputs 
+mov   r1, #(1<<15) 
+str   r1, [r0, #GPIO_OE_CLR]  @ Clear GP15 to input 
+loop: 
+/* 2) Read switch on GP15 */ 
+ldr   r2, [r0, #GPIO_IN] 
+tst   r2, #(1<<15)           
+bne   switch_high            
+@ test bit 15 
+@ if GP15==1, branch 
+/* 3a) GP15==0: turn on LED2, turn off LED1 */ 
+mov   r3, #(1<<17) 
+str   r3, [r0, #GPIO_OUT_SET] @ set GP17 
+mov   r3, #(1<<16) 
+str   r3, [r0, #GPIO_OUT_CLR] @ clear GP16 
+b     loop 
+switch_high: 
+/* 3b) GP15==1: turn on LED1, turn off LED2 */ 
+mov   r3, #(1<<16) 
+str   r3, [r0, #GPIO_OUT_SET] @ set GP16 
+mov   r3, #(1<<17) 
+str   r3, [r0, #GPIO_OUT_CLR] @ clear GP17 
+b     loop 
+.size main, .-main
